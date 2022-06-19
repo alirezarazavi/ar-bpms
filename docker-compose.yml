@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+
+  database:
+    image: mysql
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - $DB_EXTERNAL_PORT:$DB_PORT
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+      - MYSQL_PASSWORD=$DB_PASSWORD
+      - MYSQL_DATABASE=$DB_NAME
+
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend:/usr/app/backend
+      - /usr/app/backend/node_modules
+    environment:
+      - DB_HOST=$DB_CONNECTION
+      - DB_USER=$DB_USER
+      - DB_PASSWORD=$DB_PASSWORD
+      - DB_NAME=$DB_NAME
+      - DB_PORT=$DB_PORT
+    ports:
+      - $APP_EXTERNAL_PORT:$APP_PORT
+    depends_on:
+      - database
+    env_file: ./.env
+    stdin_open: true
+    tty: true
+    command: npm run watch
+
+  frontend:
+    build: ./frontend
+    volumes: 
+      - ./frontend:/usr/app/frontend
+      - /usr/app/frontend/node_modules
+    ports: 
+      - $REACT_APP_EXTERNAL_PORT:$REACT_APP_PORT
+    env_file: ./.env
+    stdin_open: true
+    tty: true
+    links: 
+      - backend
+    command: npm run start
+
+volumes:
+  db_data:
